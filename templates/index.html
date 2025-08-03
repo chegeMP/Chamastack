@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center py-12">
+    <div class="max-w-3xl mx-auto">
+        <h1 class="text-4xl font-bold text-gray-900 mb-6">
+            Welcome to ChamaStack
+        </h1>
+        <p class="text-xl text-gray-600 mb-8">
+            Digitize and simplify your chama operations. Track contributions, manage expenses, and make group decisions seamlessly.
+        </p>
+        
+        <div class="grid md:grid-cols-2 gap-6 mb-12">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="text-purple-600 text-4xl mb-4">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Mobile-First Design</h3>
+                <p class="text-gray-600">Built for Kenya's mobile-first users with offline capabilities and SMS integration.</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="text-purple-600 text-4xl mb-4">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Secure & Transparent</h3>
+                <p class="text-gray-600">All transactions are recorded transparently with member verification.</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="text-purple-600 text-4xl mb-4">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Real-time Tracking</h3>
+                <p class="text-gray-600">Monitor contributions, expenses, and goals with live dashboards.</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="text-purple-600 text-4xl mb-4">
+                    <i class="fas fa-vote-yea"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Democratic Decisions</h3>
+                <p class="text-gray-600">Built-in voting system for transparent group decision making.</p>
+            </div>
+        </div>
+        
+        <div class="space-x-4">
+            <a href="{{ url_for('register') }}" class="chama-gradient text-white px-8 py-3 rounded-lg font-medium hover:opacity-90 inline-block">
+                Get Started
+            </a>
+            <a href="{{ url_for('login') }}" class="bg-white text-purple-600 px-8 py-3 rounded-lg font-medium border border-purple-600 hover:bg-purple-50 inline-block">
+                Sign In
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Register - ChamaStack{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold text-center text-gray-900 mb-6">
+        Create Account
+    </h2>
+    
+    <form method="POST">
+        <div class="mb-4">
+            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <input type="text" id="name" name="name" required 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+        
+        <div class="mb-4">
+            <label for="phone_number" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <input type="tel" id="phone_number" name="phone_number" required placeholder="e.g., +254712345678"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+        
+        <div class="mb-6">
+            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input type="password" id="password" name="password" required 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+        
+        <button type="submit" class="w-full chama-gradient text-white py-2 rounded-lg font-medium hover:opacity-90">
+            Create Account
+        </button>
+    </form>
+    
+    <p class="text-center text-gray-600 mt-4">
+        Already have an account? 
+        <a href="{{ url_for('login') }}" class="text-purple-600 hover:underline">Sign in</a>
+    </p>
+</div>
+{% endblock %}

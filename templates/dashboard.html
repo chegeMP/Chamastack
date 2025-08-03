@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ChamaStack{% endblock %}
+
+{% block content %}
+<div x-data="{ activeTab: 'overview' }">
+    <!-- Welcome Section -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">
+            Welcome back, {{ current_user.name }}!
+        </h1>
+        <p class="text-gray-600">Here's your chama activity summary</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="bg-purple-100 p-3 rounded-full">
+                    <i class="fas fa-users text-purple-600 text-3xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Members</h3>
+                    <p class="text-2xl font-bold text-purple-600">{{ chama.members_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="bg-green-100 p-3 rounded-full">
+                    <i class="fas fa-money-bill-wave text-green-600 text-3xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Total Contributions</h3>
+                    <p class="text-2xl font-bold text-green-600">{{ chama.total_contributions | currency }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="bg-blue-100 p-3 rounded-full">
+                    <i class="fas fa-chart-line text-blue-600 text-3xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Goals</h3>
+                    <p class="text-2xl font-bold text-blue-600">{{ chama.goals_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>          
