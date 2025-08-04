@@ -4,113 +4,30 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import secrets
+
 import string
 import os
+from flask_moment import Moment
 
+
+
+# Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-this'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chamastack.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:lifeisgood@localhost:5432/chamastack'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
-login_manager = LoginManager()
+
+moment = Moment(app)
+
+# Initialize extensions with the app
+from extensions import db, login_manager
+db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Models
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    phone_number = db.Column(db.String(15), unique=True, nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    memberships = db.relationship('Membership', backref='user', lazy=True)
-    contributions = db.relationship('Contribution', backref='user', lazy=True)
-
-class Chama(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    join_code = db.Column(db.String(8), unique=True, nullable=False)
-    contribution_amount = db.Column(db.Float, nullable=False)
-    contribution_frequency = db.Column(db.String(20), default='monthly')  # weekly, monthly
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_active = db.Column(db.Boolean, default=True)
-    
-    # Relationships
-    memberships = db.relationship('Membership', backref='chama', lazy=True)
-    contributions = db.relationship('Contribution', backref='chama', lazy=True)
-    expenses = db.relationship('Expense', backref='chama', lazy=True)
-    goals = db.relationship('Goal', backref='chama', lazy=True)
-    votes = db.relationship('Vote', backref='chama', lazy=True)
-
-class Membership(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    chama_id = db.Column(db.Integer, db.ForeignKey('chama.id'), nullable=False)
-    role = db.Column(db.String(20), default='member')  # admin, treasurer, secretary, member
-    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_active = db.Column(db.Boolean, default=True)
-
-class Contribution(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    chama_id = db.Column(db.Integer, db.ForeignKey('chama.id'), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    payment_method = db.Column(db.String(20), default='cash')  # cash, mpesa, bank
-    transaction_ref = db.Column(db.String(50))
-    status = db.Column(db.String(20), default='pending')  # pending, confirmed, failed
-    contributed_at = db.Column(db.DateTime, default=datetime.utcnow)
-    confirmed_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-
-class Expense(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    chama_id = db.Column(db.Integer, db.ForeignKey('chama.id'), nullable=False)
-    description = db.Column(db.String(200), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    category = db.Column(db.String(50))  # admin, investment, loan, other
-    approved_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class Goal(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    chama_id = db.Column(db.Integer, db.ForeignKey('chama.id'), nullable=False)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    target_amount = db.Column(db.Float, nullable=False)
-    current_amount = db.Column(db.Float, default=0.0)
-    target_date = db.Column(db.Date)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_achieved = db.Column(db.Boolean, default=False)
-
-class Vote(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    chama_id = db.Column(db.Integer, db.ForeignKey('chama.id'), nullable=False)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    expires_at = db.Column(db.DateTime)
-    is_active = db.Column(db.Boolean, default=True)
-    
-    # Relationship for vote options and responses
-    options = db.relationship('VoteOption', backref='vote', lazy=True)
-
-class VoteOption(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    vote_id = db.Column(db.Integer, db.ForeignKey('vote.id'), nullable=False)
-    option_text = db.Column(db.String(200), nullable=False)
-    votes_count = db.Column(db.Integer, default=0)
-
-class VoteResponse(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    vote_id = db.Column(db.Integer, db.ForeignKey('vote.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    option_id = db.Column(db.Integer, db.ForeignKey('vote_option.id'), nullable=False)
-    voted_at = db.Column(db.DateTime, default=datetime.utcnow)
+# Import models AFTER initializing db
+from models import User, Chama, Membership, Contribution, Expense, Goal, Vote, VoteOption, VoteResponse
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -186,19 +103,26 @@ def dashboard():
     # Get user's chamas
     memberships = Membership.query.filter_by(user_id=current_user.id, is_active=True).all()
     chamas = [membership.chama for membership in memberships]
-    
-    # Get recent contributions
+
+    # Get all contributions
     recent_contributions = Contribution.query.filter_by(user_id=current_user.id)\
         .order_by(Contribution.contributed_at.desc()).limit(5).all()
-    
-    # Calculate total contributions
+
+    # Contributions this month
+    start_of_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    this_month_contributions = [
+        c for c in recent_contributions if c.contributed_at >= start_of_month
+    ]
+
+    # Total contributions
     total_contributions = db.session.query(db.func.sum(Contribution.amount))\
         .filter_by(user_id=current_user.id, status='confirmed').scalar() or 0
-    
+
     return render_template('dashboard.html', 
                          chamas=chamas, 
                          recent_contributions=recent_contributions,
-                         total_contributions=total_contributions)
+                         total_contributions=total_contributions,
+                         this_month_count=len(this_month_contributions))
 
 @app.route('/create_chama', methods=['GET', 'POST'])
 @login_required
@@ -380,6 +304,14 @@ def chama_stats_api(chama_id):
     return jsonify({
         'monthly_contributions': [{'month': row.month, 'total': float(row.total)} for row in monthly_data]
     })
+
+@app.template_filter('currency')
+def currency_filter(value):
+    try:
+        return "KSh {:,.2f}".format(float(value))
+    except (ValueError, TypeError):
+        return value
+
 
 if __name__ == '__main__':
     with app.app_context():

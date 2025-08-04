@@ -6,3 +6,4 @@ python-dotenv==1.0.0
 SQLAlchemy==2.0.19
 psycopg2-binary==2.9.6  # Optional for PostgreSQL support
 Flask-Migrate==4.0.4  # Optional for database migrations
+flask-login
