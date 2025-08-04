@@ -1,0 +1,60 @@
+# Byte-compiled / compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+
+# Flask instance folder
+instance/
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables and secrets
+*.env
+.env.*
+config.py  # Only if it includes secrets — otherwise remove this
+
+# Database files (SQLite fallback, if used)
+*.sqlite3
+*.db
+
+# Logs
+*.log
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# __test cache__
+.cache/
+.pytest_cache/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Static file build outputs (if any)
+static/assets/
+static/dist/
+node_modules/
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
