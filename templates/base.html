@@ -26,10 +26,27 @@
                 
                 {% if current_user.is_authenticated %}
                 <div class="flex items-center space-x-4">
-                    <span class="text-white">{{ current_user.name }}</span>
-                    <a href="{{ url_for('logout') }}" class="text-white hover:text-gray-200">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </a>
+                    <!-- Desktop Navigation -->
+                    <div class="hidden md:flex items-center space-x-4">
+                        <a href="{{ url_for('dashboard') }}" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-home mr-1"></i>Dashboard
+                        </a>
+                        <a href="{{ url_for('create_chama') }}" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-plus-circle mr-1"></i>Create
+                        </a>
+                        <a href="{{ url_for('join_chama') }}" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-user-plus mr-1"></i>Join
+                        </a>
+                    </div>
+                    
+                    <!-- Profile Link -->
+                    <div class="flex items-center">
+                        <a href="{{ url_for('profile') }}" class="flex items-center text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-user mr-2"></i>
+                            <span class="hidden sm:inline">{{ current_user.name }}</span>
+                            <span class="sm:hidden">Profile</span>
+                        </a>
+                    </div>
                 </div>
                 {% else %}
                 <div class="flex items-center space-x-4">
@@ -57,24 +74,28 @@
     {% endwith %}
 
     <!-- Main Content -->
-    <main class="mobile-first px-4 py-6">
+    <main class="mobile-first px-4 py-6 {% if current_user.is_authenticated %}pb-20 md:pb-6{% endif %}">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Mobile Bottom Navigation (for authenticated users) -->
     {% if current_user.is_authenticated %}
     <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 flex justify-around items-center md:hidden">
-        <a href="{{ url_for('dashboard') }}" class="flex flex-col items-center text-gray-600 hover:text-purple-600">
+        <a href="{{ url_for('dashboard') }}" class="flex flex-col items-center text-gray-600 hover:text-purple-600 {% if request.endpoint == 'dashboard' %}text-purple-600{% endif %}">
             <i class="fas fa-home text-xl"></i>
             <span class="text-xs mt-1">Home</span>
         </a>
-        <a href="{{ url_for('create_chama') }}" class="flex flex-col items-center text-gray-600 hover:text-purple-600">
+        <a href="{{ url_for('create_chama') }}" class="flex flex-col items-center text-gray-600 hover:text-purple-600 {% if request.endpoint == 'create_chama' %}text-purple-600{% endif %}">
             <i class="fas fa-plus-circle text-xl"></i>
             <span class="text-xs mt-1">Create</span>
         </a>
-        <a href="{{ url_for('join_chama') }}" class="flex flex-col items-center text-gray-600 hover:text-purple-600">
+        <a href="{{ url_for('join_chama') }}" class="flex flex-col items-center text-gray-600 hover:text-purple-600 {% if request.endpoint == 'join_chama' %}text-purple-600{% endif %}">
             <i class="fas fa-user-plus text-xl"></i>
             <span class="text-xs mt-1">Join</span>
+        </a>
+        <a href="{{ url_for('profile') }}" class="flex flex-col items-center text-gray-600 hover:text-purple-600 {% if request.endpoint == 'profile' %}text-purple-600{% endif %}">
+            <i class="fas fa-user text-xl"></i>
+            <span class="text-xs mt-1">Profile</span>
         </a>
     </div>
     {% endif %}

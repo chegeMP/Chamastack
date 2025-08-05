@@ -4,19 +4,16 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import secrets
-
 import string
 import os
 from flask_moment import Moment
-
-
+from sqlalchemy import func, extract
 
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-this'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:lifeisgood@localhost:5432/chamastack'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 
 moment = Moment(app)
 
@@ -95,7 +92,176 @@ def login():
 @login_required
 def logout():
     logout_user()
+    flash('You have been logged out successfully', 'success')
     return redirect(url_for('index'))
+
+@app.route('/profile')
+@login_required
+def profile():
+    # Calculate user statistics
+    user_stats = {}
+    
+    # Total chamas user is part of
+    user_stats['total_chamas'] = db.session.query(Membership).filter_by(
+        user_id=current_user.id, is_active=True
+    ).count()
+    
+    # Total contributed amount
+    total_contributed = db.session.query(func.sum(Contribution.amount)).filter_by(
+        user_id=current_user.id, status='confirmed'
+    ).scalar() or 0
+    user_stats['total_contributed'] = total_contributed
+    
+    # This month contributions
+    current_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    month_contributed = db.session.query(func.sum(Contribution.amount)).filter(
+        Contribution.user_id == current_user.id,
+        Contribution.status == 'confirmed',
+        Contribution.contributed_at >= current_month
+    ).scalar() or 0
+    user_stats['month_contributed'] = month_contributed
+    
+    # Average per chama
+    if user_stats['total_chamas'] > 0:
+        user_stats['avg_per_chama'] = total_contributed / user_stats['total_chamas']
+    else:
+        user_stats['avg_per_chama'] = 0
+    
+    # Total transactions
+    user_stats['total_transactions'] = db.session.query(Contribution).filter_by(
+        user_id=current_user.id
+    ).count()
+    
+    # Success rate (confirmed vs total contributions)
+    confirmed_count = db.session.query(Contribution).filter_by(
+        user_id=current_user.id, status='confirmed'
+    ).count()
+    if user_stats['total_transactions'] > 0:
+        user_stats['success_rate'] = round((confirmed_count / user_stats['total_transactions']) * 100, 1)
+    else:
+        user_stats['success_rate'] = 0
+    
+    # Last 7 days contributions
+    seven_days_ago = datetime.now() - timedelta(days=7)
+    user_stats['last_7_days'] = db.session.query(Contribution).filter(
+        Contribution.user_id == current_user.id,
+        Contribution.contributed_at >= seven_days_ago
+    ).count()
+    
+    # Last 30 days contributions
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    user_stats['last_30_days'] = db.session.query(Contribution).filter(
+        Contribution.user_id == current_user.id,
+        Contribution.contributed_at >= thirty_days_ago
+    ).count()
+    
+    # Pending contributions
+    user_stats['pending_contributions'] = db.session.query(Contribution).filter_by(
+        user_id=current_user.id, status='pending'
+    ).count()
+    
+    return render_template('profile.html', user_stats=user_stats)
+
+@app.route('/update_profile', methods=['POST'])
+@login_required
+def update_profile():
+    name = request.form.get('name')
+    phone_number = request.form.get('phone_number')
+    
+    if not name or not phone_number:
+        flash('All fields are required', 'error')
+        return redirect(url_for('profile'))
+    
+    # Check if phone number is already taken by another user
+    existing_user = User.query.filter(
+        User.phone_number == phone_number,
+        User.id != current_user.id
+    ).first()
+    
+    if existing_user:
+        flash('Phone number is already taken', 'error')
+        return redirect(url_for('profile'))
+    
+    # Update user information
+    current_user.name = name
+    current_user.phone_number = phone_number
+    
+    try:
+        db.session.commit()
+        flash('Profile updated successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error updating profile', 'error')
+    
+    return redirect(url_for('profile'))
+
+@app.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+    
+    if not all([current_password, new_password, confirm_password]):
+        flash('All fields are required', 'error')
+        return redirect(url_for('profile'))
+    
+    # Verify current password
+    if not check_password_hash(current_user.password_hash, current_password):
+        flash('Current password is incorrect', 'error')
+        return redirect(url_for('profile'))
+    
+    # Check if new passwords match
+    if new_password != confirm_password:
+        flash('New passwords do not match', 'error')
+        return redirect(url_for('profile'))
+    
+    # Check password strength (optional)
+    if len(new_password) < 6:
+        flash('Password must be at least 6 characters long', 'error')
+        return redirect(url_for('profile'))
+    
+    # Update password
+    current_user.password_hash = generate_password_hash(new_password)
+    
+    try:
+        db.session.commit()
+        flash('Password updated successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error updating password', 'error')
+    
+    return redirect(url_for('profile'))
+
+@app.route('/delete_account', methods=['POST'])
+@login_required
+def delete_account():
+    user_id = current_user.id
+    
+    try:
+        # Delete user's contributions
+        Contribution.query.filter_by(user_id=user_id).delete()
+        
+        # Delete user's memberships
+        Membership.query.filter_by(user_id=user_id).delete()
+        
+        # Delete user's vote responses
+        VoteResponse.query.filter_by(user_id=user_id).delete()
+        
+        # Delete the user account
+        db.session.delete(current_user)
+        db.session.commit()
+        
+        # Logout the user
+        logout_user()
+        
+        flash('Account deleted successfully', 'success')
+        return redirect(url_for('login'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting account. Please try again.', 'error')
+        return redirect(url_for('profile'))
 
 @app.route('/dashboard')
 @login_required
@@ -110,9 +276,10 @@ def dashboard():
 
     # Contributions this month
     start_of_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    this_month_contributions = [
-        c for c in recent_contributions if c.contributed_at >= start_of_month
-    ]
+    monthly_contribution_count = db.session.query(Contribution).filter(
+        Contribution.user_id == current_user.id,
+        Contribution.contributed_at >= start_of_month
+    ).count()
 
     # Total contributions
     total_contributions = db.session.query(db.func.sum(Contribution.amount))\
@@ -122,7 +289,7 @@ def dashboard():
                          chamas=chamas, 
                          recent_contributions=recent_contributions,
                          total_contributions=total_contributions,
-                         this_month_count=len(this_month_contributions))
+                         monthly_contribution_count=monthly_contribution_count)
 
 @app.route('/create_chama', methods=['GET', 'POST'])
 @login_required
@@ -293,7 +460,6 @@ def chama_stats_api(chama_id):
         return jsonify({'error': 'Unauthorized'}), 403
     
     # Get monthly contribution data for charts
-    from sqlalchemy import extract
     monthly_data = db.session.query(
         extract('month', Contribution.contributed_at).label('month'),
         db.func.sum(Contribution.amount).label('total')
@@ -311,7 +477,6 @@ def currency_filter(value):
         return "KSh {:,.2f}".format(float(value))
     except (ValueError, TypeError):
         return value
-
 
 if __name__ == '__main__':
     with app.app_context():
