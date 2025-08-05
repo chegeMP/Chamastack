@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ vote.title }} - ChamaStack{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <div class="flex justify-between items-start mb-4">
+        <div>
+            <h1 class="text-2xl font-bold">{{ vote.title }}</h1>
+            <p class="text-gray-600">{{ vote.description }}</p>
+        </div>
+        <div class="{% if vote.is_active %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %} px-3 py-1 rounded-full text-sm">
+            {{ 'Active' if vote.is_active else 'Closed' }}
+        </div>
+    </div>
+    
+    <div class="mb-6">
+        <div class="flex items-center text-gray-500 text-sm mb-2">
+            <span>Created by {{ vote.creator.name }}</span>
+            <span class="mx-2">•</span>
+            <span>{{ vote.created_at.strftime('%b %d, %Y at %I:%M %p') }}</span>
+            {% if vote.closes_at %}
+                <span class="mx-2">•</span>
+                <span>Closes {{ vote.closes_at.strftime('%b %d, %Y at %I:%M %p') }}</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if not has_voted and vote.is_active %}
+        <div class="bg-gray-50 p-4 rounded-lg mb-6">
+            <h2 class="text-lg font-semibold mb-3">Cast Your Vote</h2>
+            
+            {% if vote.vote_type == 'binary' or vote.vote_type == 'multiple_choice' %}
+                <form method="POST" action="{{ url_for('submit_vote', chama_id=chama_id, vote_id=vote.id) }}">
+                    <div class="space-y-2">
+                        {% for option in vote.options %}
+                            <div class="flex items-center">
+                                <input type="radio" id="option_{{ option.id }}" name="option_id" value="{{ option.id }}" class="mr-2" required>
+                                <label for="option_{{ option.id }}">{{ option.option_text }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        Submit Vote
+                    </button>
+                </form>
+            {% elif vote.vote_type == 'percentage' %}
+                <form method="POST" action="{{ url_for('submit_vote', chama_id=chama_id, vote_id=vote.id) }}">
+                    <div class="mb-4">
+                        <label for="percentage" class="block text-gray-700 font-medium mb-2">Approval Percentage (0-100)</label>
+                        <input type="number" id="percentage" name="percentage" min="0" max="100" 
+                               class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent" required>
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        Submit Vote
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    <div class="mb-6">
+        <h2 class="text-lg font-semibold mb-3">Results</h2>
+        
+        {% if vote.vote_type == 'binary' or vote.vote_type == 'multiple_choice' %}
+            {% set total_votes = results.values()|sum %}
+            <div class="space-y-3">
+                {% for option_text, count in results.items() %}
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">{{ option_text }}</span>
+                            <span>{{ count }} vote{{ 's' if count != 1 }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-purple-600 h-2.5 rounded-full" 
+                                 style="width: {{ (count / total_votes * 100) if total_votes > 0 else 0 }}%">
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% elif vote.vote_type == 'percentage' %}
+            <div class="text-center">
+                <div class="text-4xl font-bold mb-2 text-purple-600">
+                    {{ "%.1f"|format(results.approval_percentage) }}%
+                </div>
+                <div class="text-gray-600 mb-4">
+                    {{ results.yes_count }} of {{ results.total_members }} members approved
+                </div>
+                {% if vote.minimum_approval %}
+                    <div class="inline-block px-4 py-2 rounded-lg 
+                        {% if results.approval_percentage >= vote.minimum_approval %}
+                            bg-green-100 text-green-800
+                        {% else %}
+                            bg-red-100 text-red-800
+                        {% endif %}">
+                        {% if results.approval_percentage >= vote.minimum_approval %}
+                            Approved ✓
+                        {% else %}
+                            Not Approved ✗
+                        {% endif %}
+                        (needed {{ vote.minimum_approval }}%)
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="flex justify-between border-t pt-4">
+        <a href="{{ url_for('chama_detail', chama_id=chama_id) }}" 
+           class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+            ← Back to Chama
+        </a>
+        
+        {% if current_user.id == vote.created_by and vote.is_active %}
+            <a href="{{ url_for('close_vote', chama_id=chama_id, vote_id=vote.id) }}" 
+               class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                Close Vote
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

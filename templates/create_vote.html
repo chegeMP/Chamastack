@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Create Vote - ChamaStack{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <h1 class="text-2xl font-bold mb-6">Create New Vote for {{ chama.name }}</h1>
+    
+    <form method="POST" action="{{ url_for('create_vote', chama_id=chama.id) }}">
+        <div class="mb-4">
+            <label for="title" class="block text-gray-700 font-medium mb-2">Title</label>
+            <input type="text" id="title" name="title" class="w-full px-3 py-2 border rounded-lg" required>
+        </div>
+        
+        <div class="mb-4">
+            <label for="description" class="block text-gray-700 font-medium mb-2">Description</label>
+            <textarea id="description" name="description" rows="3" class="w-full px-3 py-2 border rounded-lg"></textarea>
+        </div>
+        
+        <div class="mb-4">
+            <label for="vote_type" class="block text-gray-700 font-medium mb-2">Vote Type</label>
+            <select id="vote_type" name="vote_type" class="w-full px-3 py-2 border rounded-lg" required>
+                <option value="binary">Yes/No Vote</option>
+                <option value="multiple_choice">Multiple Choice</option>
+                <option value="percentage">Percentage Approval</option>
+            </select>
+        </div>
+        
+        <div class="mb-4" id="options-container" style="display: none;">
+            <label class="block text-gray-700 font-medium mb-2">Options</label>
+            <div id="options-list">
+                <div class="flex mb-2">
+                    <input type="text" name="options[]" class="flex-1 px-3 py-2 border rounded-lg">
+                    <button type="button" class="ml-2 px-3 py-2 bg-gray-200 rounded-lg remove-option">Remove</button>
+                </div>
+            </div>
+            <button type="button" id="add-option" class="mt-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg">Add Option</button>
+        </div>
+        
+        <div class="mb-4" id="percentage-container" style="display: none;">
+            <label for="minimum_approval" class="block text-gray-700 font-medium mb-2">Minimum Approval Percentage</label>
+            <input type="number" id="minimum_approval" name="minimum_approval" min="1" max="100" class="w-full px-3 py-2 border rounded-lg" value="50">
+        </div>
+        
+        <div class="mb-4">
+            <label for="closes_at" class="block text-gray-700 font-medium mb-2">Closing Date & Time (optional)</label>
+            <input type="datetime-local" id="closes_at" name="closes_at" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        
+        <div class="flex justify-end">
+            <a href="{{ url_for('chama_detail', chama_id=chama.id) }}" class="px-4 py-2 bg-gray-200 rounded-lg mr-2">Cancel</a>
+            <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg">Create Vote</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('vote_type').addEventListener('change', function() {
+    const voteType = this.value;
+    const optionsContainer = document.getElementById('options-container');
+    const percentageContainer = document.getElementById('percentage-container');
+    
+    optionsContainer.style.display = voteType === 'multiple_choice' ? 'block' : 'none';
+    percentageContainer.style.display = voteType === 'percentage' ? 'block' : 'none';
+});
+
+document.getElementById('add-option').addEventListener('click', function() {
+    const optionsList = document.getElementById('options-list');
+    const newOption = document.createElement('div');
+    newOption.className = 'flex mb-2';
+    newOption.innerHTML = `
+        <input type="text" name="options[]" class="flex-1 px-3 py-2 border rounded-lg">
+        <button type="button" class="ml-2 px-3 py-2 bg-gray-200 rounded-lg remove-option">Remove</button>
+    `;
+    optionsList.appendChild(newOption);
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-option')) {
+        e.target.parentElement.remove();
+    }
+});
+</script>
+{% endblock %}

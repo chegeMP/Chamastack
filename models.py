@@ -92,30 +92,40 @@ class Vote(db.Model):
     chama_id = db.Column(db.Integer, db.ForeignKey('chama.id'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    is_active = db.Column(db.Boolean, default=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Explicit relationship
-    chama = db.relationship('Chama', foreign_keys=[chama_id])
-    options = db.relationship('VoteOption', foreign_keys='[VoteOption.vote_id]', lazy=True)
-    responses = db.relationship('VoteResponse', foreign_keys='[VoteResponse.vote_id]', lazy=True)
+    closes_at = db.Column(db.DateTime)
+    is_active = db.Column(db.Boolean, default=True)
+    vote_type = db.Column(db.String(20), default='binary')  # binary, multiple_choice, percentage
+    minimum_approval = db.Column(db.Integer)  # For percentage-based votes
+    
+    # Relationships
+    chama = db.relationship('Chama', back_populates='votes', foreign_keys=[chama_id])
+    creator = db.relationship('User', foreign_keys=[created_by])
+    options = db.relationship('VoteOption', back_populates='vote', cascade='all, delete-orphan')
+    responses = db.relationship('VoteResponse', back_populates='vote', cascade='all, delete-orphan')
 
 class VoteOption(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     vote_id = db.Column(db.Integer, db.ForeignKey('vote.id'), nullable=False)
     option_text = db.Column(db.String(100), nullable=False)
-
-    # Explicit relationship
-    vote = db.relationship('Vote', foreign_keys=[vote_id])
+    
+    # Relationships
+    vote = db.relationship('Vote', back_populates='options', foreign_keys=[vote_id])
+    responses = db.relationship('VoteResponse', back_populates='option', cascade='all, delete-orphan')
 
 class VoteResponse(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     vote_id = db.Column(db.Integer, db.ForeignKey('vote.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    option_id = db.Column(db.Integer, db.ForeignKey('vote_option.id'), nullable=False)
+    option_id = db.Column(db.Integer, db.ForeignKey('vote_option.id'))
+    percentage = db.Column(db.Integer)  # For percentage-based votes
     responded_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Explicit relationships
-    vote = db.relationship('Vote', foreign_keys=[vote_id])
+    
+    # Relationships
+    vote = db.relationship('Vote', back_populates='responses', foreign_keys=[vote_id])
     user = db.relationship('User', foreign_keys=[user_id])
-    option = db.relationship('VoteOption', foreign_keys=[option_id])
+    option = db.relationship('VoteOption', back_populates='responses', foreign_keys=[option_id])
+
+# Update Chama model to include votes relationship
+Chama.votes = db.relationship('Vote', back_populates='chama', foreign_keys='[Vote.chama_id]', lazy=True)
